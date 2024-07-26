@@ -10,6 +10,7 @@ import Json.Decode as D
 import Parser
 import Platform.Cmd as Cmd
 import Time
+import Timestamp
 
 
 
@@ -73,7 +74,7 @@ type alias Launch =
     , name : String
     , status : LaunchStatus
     , image : String
-    , windowStart : String
+    , windowStart : Time.Posix
     }
 
 
@@ -85,7 +86,7 @@ launchDecoder =
         (D.field "name" D.string)
         (D.field "status" statusDecoder)
         (D.field "image" D.string)
-        (D.field "window_start" D.string)
+        (D.field "window_start" Iso.decoder)
 
 
 type alias LaunchStatus =
@@ -226,10 +227,6 @@ viewButtons model =
 
 viewLaunch : Launch -> Html Msg
 viewLaunch launch =
-    let
-        windowStart =
-            Iso.toTime launch.windowStart
-    in
     article []
         [ header []
             [ div [ class "grid" ]
@@ -250,7 +247,7 @@ viewLaunch launch =
                 ]
             ]
         , div [] [ text ("Status: " ++ launch.status.name) ]
-        , div [] [ text ("Window Start: " ++ toHumanTime windowStart ++ " UTC") ]
+        , div [] [ Timestamp.view Time.utc launch.windowStart ]
         ]
 
 
@@ -264,65 +261,3 @@ getLaunches url =
         { url = url
         , expect = Http.expectJson GotResponse responseDecoder
         }
-
-
-
--- Human Time
-
-
-toHumanTime : Result (List Parser.DeadEnd) Time.Posix -> String
-toHumanTime time =
-    case time of
-        Ok t ->
-            String.fromInt (Time.toYear Time.utc t)
-                ++ "-"
-                ++ toHumanMonth (Time.toMonth Time.utc t)
-                ++ "-"
-                ++ String.fromInt (Time.toDay Time.utc t)
-                ++ " "
-                ++ String.fromInt (Time.toHour Time.utc t)
-                ++ ":"
-                ++ String.fromInt (Time.toMinute Time.utc t)
-
-        Err _ ->
-            ""
-
-
-toHumanMonth : Time.Month -> String
-toHumanMonth month =
-    case month of
-        Time.Jan ->
-            "Jan"
-
-        Time.Feb ->
-            "Feb"
-
-        Time.Mar ->
-            "Mar"
-
-        Time.Apr ->
-            "Apr"
-
-        Time.May ->
-            "May"
-
-        Time.Jun ->
-            "Jun"
-
-        Time.Jul ->
-            "Jul"
-
-        Time.Aug ->
-            "Aug"
-
-        Time.Sep ->
-            "Sep"
-
-        Time.Oct ->
-            "Oct"
-
-        Time.Nov ->
-            "Nov"
-
-        Time.Dec ->
-            "Dec"
